@@ -1,12 +1,56 @@
 version: '3.8'
 
 services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_USER=webhook_db_unb3_user
+      - POSTGRES_PASSWORD=VQn3gIJLJxxaEXIzFEA1cJCEP2BH1knW
+      - POSTGRES_DB=webhook_db_unb3
+      - DATABASE_URL=postgresql://webhook_db_unb3_user:VQn3gIJLJxxaEXIzFEA1cJCEP2BH1knW@postgres/webhook_db_unb3
+      - REDIS_HOST=red-d0b8s9pr0fns73d8efp0  # Updated to match the provided Redis hostname
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://red-d0b8s9pr0fns73d8efp0:6379  # Updated to the provided Redis URL
+      - CELERY_BROKER_URL=redis://red-d0b8s9pr0fns73d8efp0:6379/1  # Updated to use the new Redis URL for Celery
+      - CELERY_RESULT_BACKEND=redis://red-d0b8s9pr0fns73d8efp0:6379/2  # Updated to use the new Redis URL for Celery
+    depends_on:
+      - postgres
+    volumes:
+      - ./api:/app
+
+  worker:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    command: celery -A app.worker worker --loglevel=info
+    environment:
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_USER=webhook_db_unb3_user
+      - POSTGRES_PASSWORD=VQn3gIJLJxxaEXIzFEA1cJCEP2BH1knW
+      - POSTGRES_DB=webhook_db_unb3
+      - DATABASE_URL=postgresql://webhook_db_unb3_user:VQn3gIJLJxxaEXIzFEA1cJCEP2BH1knW@postgres/webhook_db_unb3
+      - REDIS_HOST=red-d0b8s9pr0fns73d8efp0  # Updated Redis hostname
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://red-d0b8s9pr0fns73d8efp0:6379  # Updated Redis URL
+      - CELERY_BROKER_URL=redis://red-d0b8s9pr0fns73d8efp0:6379/1
+      - CELERY_RESULT_BACKEND=redis://red-d0b8s9pr0fns73d8efp0:6379/2
+    depends_on:
+      - redis
+      - api
+    volumes:
+      - ./api:/app
+
   postgres:
     image: postgres:15
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: webhook_service
+      - POSTGRES_USER=webhook_db_unb3_user
+      - POSTGRES_PASSWORD=VQn3gIJLJxxaEXIzFEA1cJCEP2BH1knW
+      - POSTGRES_DB=webhook_db_unb3
     ports:
       - "5432:5432"
     volumes:

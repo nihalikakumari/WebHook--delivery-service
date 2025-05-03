@@ -4,72 +4,73 @@ A robust webhook delivery service built with FastAPI and React, featuring reliab
 
 ## Features
 
-- **Subscription Management**: CRUD operations for webhook subscriptions
-- **Webhook Ingestion**: Fast acknowledgment and async processing
+- **Subscription Management**: Create and manage webhook subscriptions with target URLs
+- **Secure Delivery**: HMAC signature verification for payload authenticity
+- **Event Type Filtering**: Subscribe to specific event types
 - **Reliable Delivery**: Automatic retries with exponential backoff
 - **Comprehensive Logging**: Track all delivery attempts and their outcomes
-- **Security**: Payload signature verification
-- **Event Type Filtering**: Subscribe to specific event types
-- **Performance Optimized**: Redis caching and efficient queuing
-- **Modern UI**: React-based dashboard for management and monitoring
+- **Real-time Status**: Monitor webhook delivery status and history
+- **Performance Optimized**: Redis caching and efficient database queries
+- **Horizontally Scalable**: Designed for high availability and throughput
 
 ## Tech Stack
 
 ### Backend
-- FastAPI (API framework)
-- PostgreSQL (primary database)
-- Redis (caching and queuing)
-- Celery (background tasks)
-- SQLAlchemy (ORM)
+- **Framework**: FastAPI - Chosen for:
+  - High performance with async support
+  - Automatic OpenAPI documentation
+  - Type safety with Pydantic
+  - Built-in dependency injection
+- **Database**: PostgreSQL
+  - ACID compliance for reliable tracking
+  - JSON support for flexible payloads
+  - Array type for event filtering
+  - Efficient indexing for logs
+- **Cache/Queue**: Redis
+  - Fast in-memory caching
+  - Reliable message broker
+- **Task Queue**: Celery
+  - Robust background processing
+  - Automatic retries
+  - Task monitoring
 
 ### Frontend
-- React
-- TanStack Router
-- TanStack Query
-- Tailwind CSS
-- Axios
+- React 18 with TypeScript
+- TanStack Router for type-safe routing
+- TanStack Query for data fetching
+- Tailwind CSS for styling
+- Lucide React for icons
 
 ## Getting Started
 
 ### Prerequisites
 - Docker and Docker Compose
-- Node.js 18+
-- Python 3.9+
+- Git
 
 ### Local Development Setup
 
-1. Start the infrastructure:
-   ```bash
-   docker-compose up -d
-   ```
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/webhook-service.git
+cd webhook-service
+```
 
-2. Install backend dependencies:
-   ```bash
-   cd api
-   pip install -r requirements.txt
-   ```
+2. Create environment file:
+```bash
+cp .env.example .env
+```
 
-3. Install frontend dependencies:
-   ```bash
-   npm install
-   ```
+3. Start services:
+```bash
+docker-compose up --build
+```
 
-4. Start the development servers:
-   ```bash
-   # Terminal 1: Frontend
-   npm run dev
-
-   # Terminal 2: Backend
-   npm run api
-
-   # Terminal 3: Celery Worker
-   npm run worker
-   ```
+Services will be available at:
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
 ## API Documentation
-
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
 
 ### Example API Usage
 
@@ -78,10 +79,10 @@ A robust webhook delivery service built with FastAPI and React, featuring reliab
 curl -X POST http://localhost:8000/api/subscriptions \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Test Webhook",
-    "target_url": "https://example.com/webhook",
-    "secret_key": "your-secret",
-    "event_types": ["order.created", "user.updated"]
+    "name": "Order Updates",
+    "target_url": "https://example.com/webhooks",
+    "secret_key": "your-secret-key",
+    "event_types": ["order.created", "order.updated"]
   }'
 ```
 
@@ -91,7 +92,7 @@ curl -X POST http://localhost:8000/api/webhooks/ingest/1 \
   -H "Content-Type: application/json" \
   -H "X-Hub-Signature-256: sha256=computed-signature" \
   -H "X-Event-Type: order.created" \
-  -d '{"event": "order.created", "data": {"id": 123}}'
+  -d '{"order_id": "123", "status": "paid"}'
 ```
 
 3. Check webhook status:
@@ -106,31 +107,93 @@ curl http://localhost:8000/api/webhooks/subscription/1/logs
 
 ## Performance Considerations
 
-- Redis caching for subscription details
+- Connection pooling for database
+- Redis caching for frequently accessed data
 - Async task processing with Celery
-- Efficient database queries with proper indexing
-- Connection pooling for database and Redis
+- Database indexing strategy:
+  - Composite index on (subscription_id, created_at)
+  - Index on webhook_id for status lookups
+  - Partial index on status for active retries
 
 ## Cost Estimation
 
-### Free Tier Resources
--Render Web Service: $0/month (Hobby plan)
--PostgreSQL: $0/month (Hobby plan)
--Redis: $0/month (Hobby plan)
+### Free Tier Resources (Render)
+- Web Service (Frontend): $0/month
+- Web Service (Backend): $0/month
+- PostgreSQL: $0/month (Shared instance)
+- Redis: $0/month (Shared instance)
 
 ### Production Estimates (5000 webhooks/day)
--Application Hosting: $25-50/month
--Database: $50/month
--Redis: $15/month
--Total: $90-115/month
+Based on 5000 webhooks/day with 1.2 average delivery attempts:
+- Compute: $25-50/month
+- Database: $50/month (Dedicated PostgreSQL)
+- Redis: $15/month
+- Network: $10/month
+- **Total**: $100-125/month
 
 ## Security
 
-- Payload signature verification
+- HMAC signature verification
 - Rate limiting
 - Input validation
-- Secure headers
 - CORS configuration
+- Environment variable management
+- Database connection pooling
+- Secure headers
+
+## Testing
+
+```bash
+# Run backend tests
+docker-compose exec api pytest
+
+# Run frontend tests
+npm test
+```
+
+## Deployment
+
+The service is deployed on Render:
+- Frontend: https://webhook-service.onrender.com
+- Backend: https://webhook-service-api.onrender.com
+- API Docs: https://webhook-service-api.onrender.com/docs
+
+## Architecture
+
+The service uses a microservices architecture with:
+- Frontend SPA for management
+- FastAPI backend for API endpoints
+- PostgreSQL for persistent storage
+- Redis for caching and queuing
+- Celery workers for async processing
+
+Database Schema:
+```sql
+-- Subscriptions
+CREATE TABLE subscription (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR NOT NULL,
+    target_url VARCHAR NOT NULL,
+    secret_key VARCHAR,
+    event_types TEXT[],
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ
+);
+
+-- Delivery Logs
+CREATE TABLE delivery_log (
+    id SERIAL PRIMARY KEY,
+    webhook_id VARCHAR NOT NULL,
+    subscription_id INTEGER REFERENCES subscription(id),
+    attempt_number INTEGER,
+    status VARCHAR,
+    status_code INTEGER,
+    error_message TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    next_retry_at TIMESTAMPTZ
+);
+```
 
 ## Contributing
 
@@ -142,8 +205,11 @@ curl http://localhost:8000/api/webhooks/subscription/1/logs
 
 ## Credits
 
-- FastAPI: https://fastapi.tiangolo.com/
-- React: https://reactjs.org/
-- TanStack: https://tanstack.com/
-- Tailwind CSS: https://tailwindcss.com/
-- Celery: https://docs.celeryq.dev/
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [React](https://reactjs.org/)
+- [TanStack](https://tanstack.com/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Celery](https://docs.celeryq.dev/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Redis](https://redis.io/)
+- [Docker](https://www.docker.com/)
