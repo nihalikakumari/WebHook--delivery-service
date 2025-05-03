@@ -1,9 +1,35 @@
 services:
   - type: web
-    name: webhook-service
+    name: webhook-service-frontend
     env: node
     buildCommand: npm install && npm run build
     startCommand: npm run preview
     envVars:
+      - key: PORT
+        value: 10000
       - key: VITE_API_URL
-        value: https://your-api-url.onrender.com/api
+        value: https://webhook-service-api.onrender.com/api
+    healthCheckPath: /
+    autoDeploy: true
+
+  - type: web
+    name: webhook-service-api
+    env: python
+    buildCommand: cd api && pip install -r requirements.txt
+    startCommand: cd api && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: POSTGRES_DB
+        value: webhook_service
+      - key: POSTGRES_USER
+        sync: false
+      - key: POSTGRES_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: CELERY_BROKER_URL
+        sync: false
+      - key: CELERY_RESULT_BACKEND
+        sync: false
+    healthCheckPath: /api/docs
