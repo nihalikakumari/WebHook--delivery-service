@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: webhook-service
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run preview
+    envVars:
+      - key: VITE_API_URL
+        value: https://your-api-url.onrender.com/api
