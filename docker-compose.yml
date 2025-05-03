@@ -1,6 +1,20 @@
 version: '3.8'
 
 services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    depends_on:
+      - api
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+
   api:
     build:
       context: ./api
@@ -8,18 +22,19 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - POSTGRES_SERVER=postgres
+      - POSTGRES_SERVER=dpg-d0b8oap5pdvs73cfcpag-a.internal
       - POSTGRES_USER=webhook_db_unb3_user
       - POSTGRES_PASSWORD=VQn3gIJLJxxaEXIzFEA1cJCEP2BH1knW
       - POSTGRES_DB=webhook_db_unb3
-      - DATABASE_URL=postgresql://webhook_db_unb3_user:VQn3gIJLJxxaEXIzFEA1cJCEP2BH1knW@postgres/webhook_db_unb3
-      - REDIS_HOST=red-d0b8s9pr0fns73d8efp0  # Updated to match the provided Redis hostname
-      - REDIS_PORT=6379
-      - REDIS_URL=redis://red-d0b8s9pr0fns73d8efp0:6379  # Updated to the provided Redis URL
-      - CELERY_BROKER_URL=redis://red-d0b8s9pr0fns73d8efp0:6379/1  # Updated to use the new Redis URL for Celery
-      - CELERY_RESULT_BACKEND=redis://red-d0b8s9pr0fns73d8efp0:6379/2  # Updated to use the new Redis URL for Celery
-    depends_on:
-      - postgres
+      - DATABASE_URL=postgresql://webhook_db_unb3_user:VQn3gIJLJxxaEXIzFEA1cJCEP2BH1knW@dpg-d0b8oap5pdvs73cfcpag-a.internal:5432/webhook_db_unb3
+      - REDIS_URL=redis://red-d0b8s9pr0fns73d8efp0:6379
+      - CELERY_BROKER_URL=redis://red-d0b8s9pr0fns73d8efp0:6379/1
+      - CELERY_RESULT_BACKEND=redis://red-d0b8s9pr0fns73d8efp0:6379/2
+      - MAX_RETRY_ATTEMPTS=5
+      - INITIAL_RETRY_DELAY=10
+      - MAX_RETRY_DELAY=900
+      - DELIVERY_TIMEOUT=10
+      - LOG_RETENTION_DAYS=3
     volumes:
       - ./api:/app
 
@@ -29,21 +44,24 @@ services:
       dockerfile: Dockerfile
     command: celery -A app.worker worker --loglevel=info
     environment:
-      - POSTGRES_SERVER=postgres
+      - POSTGRES_SERVER=dpg-d0b8oap5pdvs73cfcpag-a.internal
       - POSTGRES_USER=webhook_db_unb3_user
       - POSTGRES_PASSWORD=VQn3gIJLJxxaEXIzFEA1cJCEP2BH1knW
       - POSTGRES_DB=webhook_db_unb3
-      - DATABASE_URL=postgresql://webhook_db_unb3_user:VQn3gIJLJxxaEXIzFEA1cJCEP2BH1knW@postgres/webhook_db_unb3
-      - REDIS_HOST=red-d0b8s9pr0fns73d8efp0  # Updated Redis hostname
-      - REDIS_PORT=6379
-      - REDIS_URL=redis://red-d0b8s9pr0fns73d8efp0:6379  # Updated Redis URL
+      - DATABASE_URL=postgresql://webhook_db_unb3_user:VQn3gIJLJxxaEXIzFEA1cJCEP2BH1knW@dpg-d0b8oap5pdvs73cfcpag-a.internal:5432/webhook_db_unb3
+      - REDIS_URL=redis://red-d0b8s9pr0fns73d8efp0:6379
       - CELERY_BROKER_URL=redis://red-d0b8s9pr0fns73d8efp0:6379/1
       - CELERY_RESULT_BACKEND=redis://red-d0b8s9pr0fns73d8efp0:6379/2
-    depends_on:
-      - redis
-      - api
+      - MAX_RETRY_ATTEMPTS=5
+      - INITIAL_RETRY_DELAY=10
+      - MAX_RETRY_DELAY=900
+      - DELIVERY_TIMEOUT=10
+      - LOG_RETENTION_DAYS=3
     volumes:
       - ./api:/app
+
+# These services are for local PostgreSQL and Redis if needed
+# You can disable/remove them when using external hosted services like Render
 
   postgres:
     image: postgres:15
@@ -55,11 +73,21 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U webhook_db_unb3_user"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
