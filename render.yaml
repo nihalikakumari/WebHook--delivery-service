@@ -19,19 +19,60 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
     envVars:
+      - key: PORT
+        value: 8000
       - key: POSTGRES_DB
-        value: webhook_db_unb3
+        fromDatabase:
+          name: webhook-db
+          property: database
       - key: POSTGRES_USER
-        value: webhook_db_unb3_user
+        fromDatabase:
+          name: webhook-db
+          property: user
       - key: POSTGRES_PASSWORD
-        value: VQn3gIJLJxxaEXIzFEA1cJCEP2BH1knW
+        fromDatabase:
+          name: webhook-db
+          property: password
       - key: DATABASE_URL
-        value: postgresql://webhook_db_unb3_user:VQn3gIJLJxxaEXIzFEA1cJCEP2BH1knW@dpg-d0b8oap5pdvs73cfcpag-a/webhook_db_unb3
+        fromDatabase:
+          name: webhook-db
+          property: connectionString
       - key: REDIS_URL
-        value: redis://red-d0b8s9pr0fns73d8efp0:6379
+        fromService:
+          name: webhook-redis
+          type: redis
+          property: connectionString
       - key: CELERY_BROKER_URL
-        value: redis://red-d0b8s9pr0fns73d8efp0:6379/1
+        fromService:
+          name: webhook-redis
+          type: redis
+          property: connectionString
+          envPrefix: BROKER_
       - key: CELERY_RESULT_BACKEND
-        value: redis://red-d0b8s9pr0fns73d8efp0:6379/2
+        fromService:
+          name: webhook-redis
+          type: redis
+          property: connectionString
+          envPrefix: BACKEND_
+      - key: MAX_RETRY_ATTEMPTS
+        value: "5"
+      - key: INITIAL_RETRY_DELAY
+        value: "10"
+      - key: MAX_RETRY_DELAY
+        value: "900"
+      - key: DELIVERY_TIMEOUT
+        value: "10"
+      - key: LOG_RETENTION_DAYS
+        value: "3"
     healthCheckPath: /docs
     autoDeploy: true
+
+  - type: redis
+    name: webhook-redis
+    ipAllowList: []
+    plan: free
+
+  - type: postgres
+    name: webhook-db
+    ipAllowList: []
+    plan: free
