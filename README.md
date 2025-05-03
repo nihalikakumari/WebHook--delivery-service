@@ -114,15 +114,15 @@ curl http://localhost:8000/api/webhooks/subscription/1/logs
 ## Cost Estimation
 
 ### Free Tier Resources
-- Heroku Hobby Dyno: $0/month
-- Heroku Postgres Hobby: $0/month
-- Heroku Redis Hobby: $0/month
+-Render Web Service: $0/month (Hobby plan)
+-PostgreSQL: $0/month (Hobby plan)
+-Redis: $0/month (Hobby plan)
 
 ### Production Estimates (5000 webhooks/day)
-- Application Hosting: $25-50/month
-- Database: $50/month
-- Redis: $15/month
-- Total: $90-115/month
+-Application Hosting: $25-50/month
+-Database: $50/month
+-Redis: $15/month
+-Total: $90-115/month
 
 ## Security
 
