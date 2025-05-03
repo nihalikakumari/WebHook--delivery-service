@@ -17,10 +17,10 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Configure CORS
+# Configure CORS - Allow all origins in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for Render deployment
+    allow_origins=["*"],  # Will be handled by Render's proxy
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

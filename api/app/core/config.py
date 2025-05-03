@@ -6,8 +6,8 @@ class Settings(BaseSettings):
     PROJECT_VERSION: str = "1.0.0"
     API_PREFIX: str = "/api"
     
-    # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
+    # CORS - Allow all origins in production, will be restricted by Render's proxy
+    CORS_ORIGINS: List[str] = ["*"]
     
     # Database
     POSTGRES_SERVER: str = "localhost"

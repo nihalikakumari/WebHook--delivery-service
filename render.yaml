@@ -8,7 +8,7 @@ services:
       - key: PORT
         value: 10000
       - key: VITE_API_URL
-        value: https://webhook-service-api.onrender.com/api
+        value: https://webhook-backend-88w7.onrender.com/api
     healthCheckPath: /
     autoDeploy: true
 
@@ -47,13 +47,11 @@ services:
           name: webhook-redis
           type: redis
           property: connectionString
-          envPrefix: BROKER_
       - key: CELERY_RESULT_BACKEND
         fromService:
           name: webhook-redis
           type: redis
           property: connectionString
-          envPrefix: BACKEND_
       - key: MAX_RETRY_ATTEMPTS
         value: "5"
       - key: INITIAL_RETRY_DELAY
