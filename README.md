@@ -154,9 +154,9 @@ npm test
 ## Deployment
 
 The service is deployed on Render:
-- Frontend: https://webhook-service.onrender.com
-- Backend: https://webhook-service-api.onrender.com
-- API Docs: https://webhook-service-api.onrender.com/docs
+- **Frontend**: [https://webhook-frontend-e85x.onrender.com]
+- **Backend**: [https://webhook-backend-88w7.onrender.com]
+- **API Docs**: [https://webhook-backend-88w7.onrender.com/docs]
 
 ## Architecture
 
